@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static VendingMachine.Win.FormVendingMachine;
 
 namespace VendingMachine.Win
 {
@@ -16,48 +17,51 @@ namespace VendingMachine.Win
 		/// 商品為五十元之販賣機
 		/// 投幣大於零元可退幣，大於五十元可出貨
 		/// </summary>
-		private readonly int productPrice = 50;
-		private int coinInMachine = 0;
+		
+		private static readonly int productPrice = 50;
+		VendingMachine vendingMachine = new VendingMachine(productPrice);
 
 		//初始狀態販賣機內為零元，不可退幣及出貨
 		public FormVendingMachine()
 		{
 			InitializeComponent();
+
 			buttonProductOut.Enabled = false;
 			buttonCoinOut.Enabled = false;
-			textBoxCoinInMachine.Text = $"已投入{coinInMachine}元";
+			textBoxCoinInMachine.Text = $"已投入{vendingMachine.CoinInMachine}元";
 		}
 
 		//判斷可否退幣及出貨和顯示餘額
 		void Display()
 		{
-			textBoxCoinInMachine.Text = $"已投入{coinInMachine}元";
+			textBoxCoinInMachine.Text = $"已投入{vendingMachine.CoinInMachine}元";
 
+			vendingMachine.IsEnough();
 			//投幣大於零元可退幣
-			buttonCoinOut.Enabled = coinInMachine > 0 ? true : false;
+			buttonCoinOut.Enabled = vendingMachine.CoinOutIsAllow;
 
 			//投幣大於五十元可出貨
-			buttonProductOut.Enabled = coinInMachine >= productPrice ? true : false;
+			buttonProductOut.Enabled = vendingMachine.ProductOutIsAllow;
 		}
 
 		private void buttonCoinOut_Click(object sender, EventArgs e)
 		{
-			MessageBox.Show($"退幣{coinInMachine}元");
-			coinInMachine = 0;//退幣,餘額歸零
+			MessageBox.Show($"退幣{vendingMachine.CoinInMachine}元");
+			vendingMachine.CoinOut();//退幣,餘額歸零
 			Display();
 		}
 
 		private void buttonProductOut_Click(object sender, EventArgs e)
 		{
-			coinInMachine -= productPrice;//出貨,餘額減去商品價格
+			vendingMachine.ProductOut();//出貨,餘額減去商品價格
 			MessageBox.Show("出貨，獲得一商品");
 			Display();
 		}
 
 		private void buttonPutCoinIn_Click(object sender, EventArgs e)
 		{
-			if (int.TryParse(textBoxPutCoinIn.Text, out int coin) && coin > 0)
-				coinInMachine += coin;//投幣,餘額加上投入金額
+			if (int.TryParse(textBoxPutCoinIn.Text, out int coins) && coins > 0)
+				vendingMachine.PutCoinsIn(coins);//投幣,餘額加上投入金額
 
 			else MessageBox.Show("請輸入正整數金額。");
 
@@ -66,7 +70,44 @@ namespace VendingMachine.Win
 
 		public class VendingMachine
 		{
+			private readonly int productPrice;
 
+			private int _coinInMachine = 0;
+			private bool _coinOutIsAllow = false;
+			private bool _productOutIsAllow = false;
+
+			public int CoinInMachine { get => _coinInMachine; set => _coinInMachine = value; }
+			public bool CoinOutIsAllow { get => _coinOutIsAllow; set => _coinOutIsAllow = value; }
+			public bool ProductOutIsAllow { get => _productOutIsAllow; set => _productOutIsAllow = value; }
+
+			public VendingMachine(int productPrice)
+			{
+				this.productPrice = productPrice;
+			}
+
+			public void ProductOut()
+			{
+				CoinInMachine -= productPrice;//出貨,餘額減去商品價格
+			}
+
+			public void PutCoinsIn(int coins)
+			{
+				CoinInMachine += coins;//投幣,餘額加上投入金額
+			}
+
+			public void CoinOut()
+			{
+				CoinInMachine = 0;//退幣,餘額歸零
+			}
+
+			public void IsEnough()
+			{
+				//投幣大於零元可退幣
+				CoinOutIsAllow = CoinInMachine > 0;
+
+				//投幣大於五十元可出貨
+				ProductOutIsAllow = CoinInMachine >= productPrice;
+			}
 		}
 
 	}
